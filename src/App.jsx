@@ -1,14 +1,8 @@
 import { useState } from 'react'
 import './App.css'
+import Register from './pages/Register'
 
 function App() {
-
-
-  return (
-    <div>
-      <h1>Splitear- Inicio</h1>
-    </div>
-  )
-
+  return <Register />;
 }
 export default App
