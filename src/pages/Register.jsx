@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import axios from 'axios'
 import api from '../services/api'
 import Alert from '../components/Alert'
 
@@ -26,7 +25,7 @@ function Register() {
         e.preventDefault();
         setErrorMensaje('')
         if (formData.password !== formData.password1) {
-            alert("Las contraseñas no coinciden");
+            setErrorMensaje("Las contraseñas no coinciden");
             return;
         }
         const { password1, ...datosUsuario } = formData;
