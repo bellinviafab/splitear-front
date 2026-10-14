@@ -2,6 +2,8 @@ import { useState } from 'react';
 import api from '../services/api'
 import Alert from '../components/Alert'
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+
 
 const cx = (...classes) => classes.filter(Boolean).join(' ');
 
@@ -79,6 +81,10 @@ function Register() {
         })
     }
 
+
+    const navigate = useNavigate();
+
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMensaje('')
@@ -92,6 +98,9 @@ function Register() {
         setIsLoading(true);
         try {
             await api.post('/auth/register', datosUsuario)
+            navigate('/login', {
+                state: { mensajeExito: '¡Cuenta creada con éxito! Iniciá sesión para continuar.' }
+            });
         } catch (error) {
             const mensajeError = error.response?.data?.message || "Ocurrió un error al registrarse"
             setErrorMensaje(mensajeError)

@@ -1,7 +1,8 @@
 import Alert from '../components/Alert';
 import api from '../services/api';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const cx = (...classes) => classes.filter(Boolean).join(' ');
 
@@ -31,12 +32,24 @@ function Login() {
     const [errorMensaje, setErrorMensaje] = useState('');
     const [verPassword, setVerPassword] = useState(false);
 
+    const navigate = useNavigate();
+    const { state } = useLocation();
+    const { setUsuario } = useAuth();
+    const mensajeExito = state?.mensajeExito;
+
+    // Limpia el state del historial para que el cartel no reaparezca si recargan la página
+    useEffect(() => {
+        if (mensajeExito) window.history.replaceState({}, '');
+    }, [mensajeExito]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMensaje('');
         setIsLoading(true);
         try {
-            await api.post('/auth/login', formData);
+            const res = await api.post('/auth/login', formData);
+            setUsuario(res.data.user);
+            navigate('/inicio');
         } catch (error) {
             const mensajeError = error.response?.data?.message || "Ocurrió un error al iniciar sesión";
             setErrorMensaje(mensajeError);
@@ -47,6 +60,7 @@ function Login() {
 
     return (
         <div className="flex min-h-screen flex-col overflow-x-clip bg-slate-50 bg-[radial-gradient(48rem_24rem_at_90%_-8%,rgba(16,185,129,0.13),transparent_62%)] font-['Instrument_Sans',system-ui,sans-serif] leading-normal text-emerald-950 antialiased">
+
             <title>Iniciar sesión | Splitear</title>
             {/* Tipografías sin tocar ningún CSS. Carga no bloqueante: arranca como "print" y pasa a "all" al terminar */}
             <link
@@ -94,7 +108,19 @@ function Login() {
                     <p className="mt-2 text-base text-slate-600">Ingresá tus credenciales para acceder a tu cuenta.</p>
 
                     <form className="mt-[26px] grid gap-[18px]" onSubmit={handleSubmit} aria-busy={isLoading}>
-                        <div aria-live="polite">
+                        <div aria-live="polite" className="grid gap-3">
+                            {mensajeExito && !errorMensaje && (
+                                <div
+                                    role="status"
+                                    className="flex items-start gap-2.5 rounded-[14px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900"
+                                >
+                                    <svg className="mt-0.5 shrink-0 text-emerald-600" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="9" />
+                                        <path d="m8 12.5 3 3 5-6" />
+                                    </svg>
+                                    {mensajeExito}
+                                </div>
+                            )}
                             <Alert message={errorMensaje} />
                         </div>
 

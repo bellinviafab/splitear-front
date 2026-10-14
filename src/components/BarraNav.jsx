@@ -41,7 +41,7 @@ const ICONOS = {
 
 function BarraNav() {
     const items = [
-        { label: 'Grupos', to: '/dashboard' },
+        { label: 'Grupos', to: '/inicio' },
         { label: 'Actividad', to: '/actividad' },
         { label: 'Cuenta', to: '/cuenta' },
     ];
