@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -356,7 +356,83 @@ function TabSaldos({ integrantes, saldos, transferencias, miId, porId, avatarDe 
     );
 }
 
-/* ---------- Pestaña Integrantes ---------- */
+
+// 2) Pegar todo lo que sigue en lugar de tu TabIntegrantes (copiarTexto y AliasCopiable son nuevos)
+
+/* Copia al portapapeles. La Clipboard API solo existe en https o localhost: si falla (por ejemplo al probar desde el celular por http en la red local) se usa el método viejo */
+async function copiarTexto(texto) {
+    try {
+        await navigator.clipboard.writeText(texto);
+        return true;
+    } catch {
+        const campo = document.createElement('textarea');
+        campo.value = texto;
+        campo.setAttribute('readonly', '');
+        campo.style.position = 'fixed';
+        campo.style.opacity = '0';
+        document.body.appendChild(campo);
+        campo.select();
+        let ok;
+        try {
+            ok = document.execCommand('copy');
+        } catch {
+            ok = false;
+        }
+        document.body.removeChild(campo);
+        return ok;
+    }
+}
+
+/* Alias que se copia con un toque. Cada fila lleva su propio estado, así el aviso "copiado" aparece solo en la que se tocó */
+function AliasCopiable({ alias }) {
+    const [estado, setEstado] = useState('reposo'); // 'reposo' | 'copiado' | 'error'
+    const temporizador = useRef(null);
+
+    useEffect(() => () => clearTimeout(temporizador.current), []);
+
+    const copiar = async () => {
+        const ok = await copiarTexto(alias);
+        setEstado(ok ? 'copiado' : 'error');
+        clearTimeout(temporizador.current);
+        temporizador.current = setTimeout(() => setEstado('reposo'), 2000);
+    };
+
+    return (
+        <>
+            <button
+                type="button"
+                onClick={copiar}
+                aria-label={`Copiar alias: ${alias}`}
+                className={cx(
+                    '-ml-2 mt-0.5 inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-xl px-2 text-sm transition motion-reduce:transition-none',
+                    estado === 'copiado' && 'bg-emerald-100 font-semibold text-emerald-900',
+                    estado === 'error' && 'bg-rose-50 font-semibold text-rose-700',
+                    estado === 'reposo' && 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-800 active:bg-emerald-100',
+                    FOCUS,
+                )}
+            >
+                <span className="truncate">
+                    {estado === 'copiado' ? 'Alias copiado' : estado === 'error' ? 'No se pudo copiar' : `Alias: ${alias}`}
+                </span>
+                {estado === 'copiado' ? (
+                    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="m5 12.5 4.5 4.5L19 7.5" />
+                    </svg>
+                ) : (
+                    <svg className="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <rect x="9" y="9" width="11" height="11" rx="2.5" />
+                        <path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15" />
+                    </svg>
+                )}
+            </button>
+            {/* Aviso para lectores de pantalla */}
+            <span role="status" className="sr-only">
+                {estado === 'copiado' ? 'Alias copiado' : estado === 'error' ? 'No se pudo copiar el alias' : ''}
+            </span>
+        </>
+    );
+}
+
 function TabIntegrantes({ integrantes, gastosPorIntegrante, miId, avatarDe }) {
     return (
         <ul className="divide-y divide-slate-200 rounded-3xl border border-slate-200 bg-white px-4 shadow-lg shadow-emerald-900/5">
@@ -372,13 +448,15 @@ function TabIntegrantes({ integrantes, gastosPorIntegrante, miId, avatarDe }) {
                                 </span>
                             )}
                         </p>
-                        <p className="mt-0.5 truncate text-sm text-slate-500">
-                            {u.alias ? `Alias: ${u.alias}` : 'Sin alias cargado'}
-                        </p>
+                        {u.alias ? (
+                            <AliasCopiable alias={u.alias} />
+                        ) : (
+                            <p className="mt-0.5 truncate text-sm text-slate-500">Sin alias cargado</p>
+                        )}
                     </div>
                     <p className="shrink-0 text-right text-sm">
                         <span className="block font-semibold">{money(gastosPorIntegrante[u.id] ?? 0)}</span>
-                        <span className="block text-slate-500">pagó</span>
+                        <span className="block text-slate-500">Gastos en total</span>
                     </p>
                 </li>
             ))}
