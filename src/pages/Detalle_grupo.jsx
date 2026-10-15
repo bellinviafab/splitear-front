@@ -478,7 +478,10 @@ function DetalleGrupo() {
     const [transferencias, setTransferencias] = useState([]); // Pagos sugeridos { idA debe a idB montoDeuda }
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState(null);
-    const [intento, setIntento] = useState(0); // Sube al tocar "Reintentar" para volver a pedir los datos
+    const [intento, setIntento] = useState(0); // Sube al tocar "Reintentar" o "Saldar cuentas" para volver a pedir los datos
+    const [actualizando, setActualizando] = useState(false); // true mientras se refrescan los datos al tocar "Saldar cuentas"
+    const [errorRefresco, setErrorRefresco] = useState(false); // El refresco falló pero ya hay datos en pantalla: se conservan
+    const datosDe = useRef(null); // Id del grupo cuyos datos ya se mostraron al menos una vez
 
     // Estado para controlar las 3 pestañas: 'gastos' | 'saldos' | 'integrantes'
     const [tabActiva, setTabActiva] = useState('gastos');
@@ -503,10 +506,19 @@ function DetalleGrupo() {
                 // Se descartan restos de redondeo (menos de medio centavo)
                 setTransferencias((resBalance.data || []).filter((t) => Number(t.montoDeuda) >= 0.005));
                 setError(null);
+                setErrorRefresco(false);
+                datosDe.current = id;
             } catch {
-                if (activo) setError('Error al obtener los detalles del grupo');
+                if (activo) {
+                    // Con datos ya cargados, una falla de refresco no reemplaza la pantalla: se avisa y se dejan los últimos datos
+                    if (datosDe.current === id) setErrorRefresco(true);
+                    else setError('Error al obtener los detalles del grupo');
+                }
             } finally {
-                if (activo) setCargando(false);
+                if (activo) {
+                    setCargando(false);
+                    setActualizando(false);
+                }
             }
         };
         fetchDatos();
@@ -515,6 +527,24 @@ function DetalleGrupo() {
             activo = false;
         };
     }, [id, intento]);
+
+    // Al volver a esta pestaña del navegador (o a la app en el celular) se piden los datos de nuevo, sin esqueleto ni cambiar de pestaña.
+    // Cubre el caso en que el grupo estaba en cero, no hay botón "Saldar cuentas" y otro integrante cargó un gasto mientras tanto.
+    useEffect(() => {
+        const alVolver = () => {
+            if (document.visibilityState === 'visible') setIntento((n) => n + 1);
+        };
+        document.addEventListener('visibilitychange', alVolver);
+        return () => document.removeEventListener('visibilitychange', alVolver);
+    }, []);
+
+    // "Saldar cuentas": lleva a la pestaña de saldos y vuelve a pedir grupo, gastos y balance, para ver lo que cargaron los demás
+    const handleSaldarCuentas = () => {
+        setTabActiva('saldos');
+        setErrorRefresco(false);
+        setActualizando(true);
+        setIntento((n) => n + 1);
+    };
 
     // Si la ruta cambió a otro grupo, no se muestran los datos del anterior mientras llegan los nuevos
     const sinDatos = cargando || (grupo && String(grupo.id) !== String(id));
@@ -666,17 +696,36 @@ function DetalleGrupo() {
                 {transferencias.length > 0 && (
                     <button
                         type="button"
-                        onClick={() => setTabActiva('saldos')}
+                        onClick={handleSaldarCuentas}
+                        disabled={actualizando}
                         className={cx(
-                            'inline-flex h-11 shrink-0 items-center rounded-full bg-emerald-500 px-4 text-[15px] font-semibold text-emerald-950',
+                            'relative inline-flex h-11 shrink-0 items-center rounded-full bg-emerald-500 px-4 text-[15px] font-semibold text-emerald-950',
                             'transition hover:bg-emerald-400 active:scale-[0.98] motion-reduce:transition-none',
+                            'disabled:cursor-progress disabled:opacity-80 disabled:hover:bg-emerald-500 disabled:active:scale-100',
                             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white',
                         )}
                     >
-                        Saldar cuentas
+                        {/* El texto se oculta pero sigue ocupando lugar: el botón no cambia de ancho al actualizar */}
+                        <span className={actualizando ? 'invisible' : undefined}>Saldar cuentas</span>
+                        {actualizando && (
+                            <>
+                                <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center">
+                                    <svg className="animate-spin motion-reduce:animate-none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                                        <path d="M21 12a9 9 0 1 1-6.2-8.56" />
+                                    </svg>
+                                </span>
+                                <span className="sr-only">Actualizando...</span>
+                            </>
+                        )}
                     </button>
                 )}
             </section>
+
+            {errorRefresco && (
+                <p role="alert" className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+                    No pudimos actualizar los datos. Estás viendo la última información cargada.
+                </p>
+            )}
 
             {/* Pestañas */}
             <div
@@ -707,7 +756,7 @@ function DetalleGrupo() {
                 })}
             </div>
 
-            <div role="tabpanel" id="panel-grupo" aria-labelledby={`tab-${tabActiva}`} className="mt-3">
+            <div role="tabpanel" id="panel-grupo" aria-labelledby={`tab-${tabActiva}`} aria-busy={actualizando} className="mt-3">
                 {tabActiva === 'gastos' && (
                     <TabGastos gastos={gastos} miId={miId} porId={porId} avatarDe={avatarDe} gastoTotalGrupo={gastoTotalGrupo} />
                 )}
