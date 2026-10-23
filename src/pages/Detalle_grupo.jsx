@@ -265,49 +265,6 @@ function TabSaldos({ integrantes, saldos, transferencias, miId, porId, avatarDe 
 
     return (
         <div className="grid gap-3">
-            <section
-                aria-labelledby="titulo-saldos"
-                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-lg shadow-emerald-900/5"
-            >
-                <h2 id="titulo-saldos" className={cx(DISPLAY, 'text-[17px] font-semibold')}>Quién puso de más</h2>
-                <ul className="mt-2 grid gap-0.5">
-                    {filas.map(({ usuario, saldo }) => {
-                        const ancho = maximo ? Math.max(3, (Math.abs(saldo) / maximo) * 50) : 0;
-                        return (
-                            <li key={usuario.id} className="grid grid-cols-[minmax(0,6.5rem)_1fr_5.25rem] items-center gap-2 py-1.5">
-                                <span className="flex min-w-0 items-center gap-2">
-                                    {avatarDe(usuario.id, 'xs')}
-                                    <span className="truncate text-[15px] font-medium">
-                                        {usuario.id === miId ? 'Vos' : nombreCorto(usuario)}
-                                    </span>
-                                </span>
-                                <span className="relative block h-3.5" aria-hidden="true">
-                                    <i className="absolute inset-y-0 left-1/2 w-px bg-slate-300" />
-                                    {saldo !== 0 && (
-                                        <i
-                                            style={{ width: `${ancho}%` }}
-                                            className={cx(
-                                                'absolute inset-y-0',
-                                                saldo > 0 ? 'left-1/2 rounded-r-lg bg-emerald-500' : 'right-1/2 rounded-l-lg bg-rose-400',
-                                            )}
-                                        />
-                                    )}
-                                </span>
-                                <span
-                                    className={cx(
-                                        'text-right text-[15px] font-semibold',
-                                        saldo > 0 ? 'text-emerald-600' : saldo < 0 ? 'text-rose-600' : 'text-slate-500',
-                                    )}
-                                >
-                                    {saldo > 0 ? '+' : saldo < 0 ? '-' : ''}
-                                    {money(saldo)}
-                                </span>
-                            </li>
-                        );
-                    })}
-                </ul>
-            </section>
-
             <p className="flex items-center justify-center gap-2 rounded-full bg-emerald-100 px-4 py-3 text-[15px] font-semibold text-emerald-900">
                 <IconoRayo />
                 {transferencias.length === 1
@@ -352,6 +309,49 @@ function TabSaldos({ integrantes, saldos, transferencias, miId, porId, avatarDe 
                     );
                 })}
             </ul>
+
+            <section
+                aria-labelledby="titulo-saldos"
+                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-lg shadow-emerald-900/5"
+            >
+                <h2 id="titulo-saldos" className={cx(DISPLAY, 'text-[17px] font-semibold')}>Quién puso de más</h2>
+                <ul className="mt-2 grid gap-0.5">
+                    {filas.map(({ usuario, saldo }) => {
+                        const ancho = maximo ? Math.max(3, (Math.abs(saldo) / maximo) * 50) : 0;
+                        return (
+                            <li key={usuario.id} className="grid grid-cols-[minmax(0,6.5rem)_1fr_5.25rem] items-center gap-2 py-1.5">
+                                <span className="flex min-w-0 items-center gap-2">
+                                    {avatarDe(usuario.id, 'xs')}
+                                    <span className="truncate text-[15px] font-medium">
+                                        {usuario.id === miId ? 'Vos' : nombreCorto(usuario)}
+                                    </span>
+                                </span>
+                                <span className="relative block h-3.5" aria-hidden="true">
+                                    <i className="absolute inset-y-0 left-1/2 w-px bg-slate-300" />
+                                    {saldo !== 0 && (
+                                        <i
+                                            style={{ width: `${ancho}%` }}
+                                            className={cx(
+                                                'absolute inset-y-0',
+                                                saldo > 0 ? 'left-1/2 rounded-r-lg bg-emerald-500' : 'right-1/2 rounded-l-lg bg-rose-400',
+                                            )}
+                                        />
+                                    )}
+                                </span>
+                                <span
+                                    className={cx(
+                                        'text-right text-[15px] font-semibold',
+                                        saldo > 0 ? 'text-emerald-600' : saldo < 0 ? 'text-rose-600' : 'text-slate-500',
+                                    )}
+                                >
+                                    {saldo > 0 ? '+' : saldo < 0 ? '-' : ''}
+                                    {money(saldo)}
+                                </span>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </section>
         </div>
     );
 }
